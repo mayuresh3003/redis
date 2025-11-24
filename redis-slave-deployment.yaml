@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-replica
+  namespace: redis
+spec:
+  serviceName: redis-replica
+  replicas: 1   
+  selector:
+    matchLabels:
+      app: redis
+      role: replica
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: replica
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6382
+              name: redis
+          command:
+            - "redis-server"
+            - "/usr/local/etc/redis/redis.conf"
+            - "--replicaof"
+            - "redis-master"
+            - "6381"
+          volumeMounts:
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/redis.conf
+              subPath: redis.conf
+            - name: redis-data
+              mountPath: /data
+            - name: redis-logs
+              mountPath: /var/log/redis
+      volumes:
+        - name: redis-config
+          configMap:
+            name: redis-replica-config
+            items:
+              - key: redis.conf
+                path: redis.conf
+        - name: redis-data
+          emptyDir: {}
+        - name: redis-logs
+          emptyDir: {}
+
