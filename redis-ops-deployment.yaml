@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-ops-api
+  namespace: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-ops-api
+  template:
+    metadata:
+      labels:
+        app: redis-ops-api
+    spec:
+      serviceAccountName: redis-ops-api-sa
+      containers:
+        - name: redis-ops-api
+          image: mayuresh03/redis-ai:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_MASTER_HOST
+              value: "redis-master.redis.svc.cluster.local"
+            - name: REDIS_MASTER_PORT
+              value: "6381"
+            - name: REDIS_REPLICA_HOST
+              value: "redis-replica.redis.svc.cluster.local"
+            - name: REDIS_REPLICA_PORT
+              value: "6382"
+            - name: REDIS_NAMESPACE
+              value: "redis"
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20
